@@ -1,18 +1,24 @@
 from textnode import *
 from markdown_to_html import *
 from inline import *
+import sys
 import os
 import shutil
 
+
 def main():
-    #node = TextNode('This is some anchor text', TextType.LINK, 'https://www.boot.dev')
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+    else:
+        basepath = '/'
+
     print(os.getcwd())
-    copy_and_paste('static','public')
+    copy_and_paste('static','docs')
 
     #we now generate a page
-    generate_website('content', 'template.html', 'public')
+    generate_website('content', 'template.html', 'docs', basepath)
 
-def generate_website(from_path, template_path, dest_path):
+def generate_website(from_path, template_path, dest_path, basepath):
 
     print(f'Generating page from {from_path} to {dest_path} using {template_path}')
     
@@ -21,10 +27,12 @@ def generate_website(from_path, template_path, dest_path):
 
     #we cycle through the content of the directory
     for list_entry in list_from_dir:
-        print(f'current list_entry is {list_entry} inside of {list_from_dir}')
+
         # if the list entry is a file we have to transform it
         if os.path.isfile(os.path.join(from_path, list_entry)):
-            generate_page(os.path.join(from_path, list_entry), template_path, dest_path)
+            #we filter out the digital junk
+            if list_entry.endswith(".md"):
+                generate_page(os.path.join(from_path, list_entry), template_path, dest_path, basepath)
 
         #if instead it's a directory we need to:
         else:
@@ -41,9 +49,9 @@ def generate_website(from_path, template_path, dest_path):
                 os.mkdir(new_dest_path)
 
             #2. recursively call generate website with the new from and dest paths
-            generate_website(os.path.join(from_path, list_entry), template_path, new_dest_path)
+            generate_website(os.path.join(from_path, list_entry), template_path, new_dest_path, basepath)
 
-def generate_page(file_path, template_path, dest_path):
+def generate_page(file_path, template_path, dest_path, basepath):
 
     #open the given file path and store the content inside of markdown_r
     with open(f"{file_path}") as f:
@@ -66,6 +74,8 @@ def generate_page(file_path, template_path, dest_path):
         template_r
             .replace('{{ Title }}', f'{title_markdown}')
             .replace('{{ Content }}', f'{html_string}')
+            .replace('href="/', f'href="{basepath}')
+            .replace('src="/', f'src="{basepath}')
     )
 
 #write the new html page at the dest_path
